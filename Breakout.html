@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Breakout!</title>
+		<style>
+			* {padding: 0; margin: 0;}
+			canvas {background: #eee; display: block; margin: 0 auto;}
+		</style>
+	</head>
+	
+	<body>
+		<canvas id="myCanvas" width="480" height="320"></canvas>
+	</body>
+	
+	<script>
+		var canvas = document.getElementById("myCanvas");
+		var ctx = canvas.getContext("2d");
+		
+		//Variables relating to the "ball" object
+		var x = canvas.width/2;		// x position
+		var y = canvas.height-30;	// y position
+		var dx = 1.5;				// x position change per draw() call (ball speed)
+		var dy = -1.5;				// y position change per draw() call (ball speed)
+		var ballRadius = 10;		// ball size
+		
+		//Variables relating to the paddle object
+		var paddleHeight = 10;
+		var paddleWidth = 75;
+		var paddleX = (canvas.width-paddleWidth) / 2; 	//position variable, starts center-bottom of the screen
+		
+		//Variables relating to input
+		var rightPressed = false;
+		var leftPressed = false;
+		
+		//Draw interval in milliseconds
+		var interval = setInterval(draw, 10);
+		
+		//Variables relating to brick grid and objects
+		var brickRowCount = 3;
+		var brickColumnCount = 5;
+		var brickWidth = 75;
+		var brickHeight = 20;
+		var brickPadding = 10;
+		var brickOffsetTop = 30;
+		var brickOffsetLeft = 30;
+		
+		var score = 0;
+		var lives = 3;
+		
+		var bricks = [];
+		for(var c=0; c<brickColumnCount; c++) {
+			bricks[c] = [];
+			for(var r=0; r<brickRowCount; r++) {
+				bricks[c][r] = { x: 0, y: 0, status: 1 }; //Creates "brick" object with X and Y coordinates and "hit" status
+			}
+		}
+
+		document.addEventListener("keydown", keyDownHandler, false);
+		document.addEventListener("keyup", keyUpHandler, false);
+		document.addEventListener("mousemove", mouseMoveHandler, false);
+
+		function mouseMoveHandler(e) {
+			var relativeX = e.clientX - canvas.offsetLeft;
+			if(relativeX > 0 && relativeX < canvas.width) {
+				paddleX = relativeX - paddleWidth/2;
+			}
+		}
+
+		function keyDownHandler(e) {
+			if(e.key == "Right" || e.key == "ArrowRight") {
+				rightPressed = true;
+			}
+			else if(e.key == "Left" || e.key == "ArrowLeft") {
+				leftPressed = true;
+			}
+		}
+		
+		function keyUpHandler(e) {
+			if(e.key == "Left" || e.key == "ArrowLeft") {
+				leftPressed = false;
+			}
+			else if(e.key == "Right" || e.key == "ArrowRight") {
+				rightPressed = false;
+			}
+		}
+		
+		function collisionDetection() {
+			for(var c=0; c<brickColumnCount; c++) {
+				for(var r=0; r<brickRowCount; r++) {
+					var b = bricks[c][r];
+					if(b.status == 1) {
+						if(x > b.x && x < b.x+brickWidth && y > b.y && y < b.y+brickHeight) {
+							dy = -dy;
+							b.status = 0;
+							score++;
+							if(score == brickRowCount*brickColumnCount) {
+								alert ("a winrar is u!");
+								document.location.reload();
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		function drawScore() {
+			ctx.font = "16px Arial";
+			ctx.fillStyle = "#0095DD";
+			ctx.fillText("Score: "+score, 8, 20);
+		}
+		
+		function drawLives() {
+			ctx.font = "16px Arial";
+			ctx.fillStyle = "#0095DD";
+			ctx.fillText("Lives: "+lives, canvas.width-65, 20);
+		}
+		
+		function drawBricks() {
+			for(var c=0; c<brickColumnCount; c++) {		//++ increments value (adds 1)  to 'c' as long as 'c' is smaller than brickColumnCount
+				for(var r=0; r<brickRowCount; r++) {	//Same for 'r' in relation to brickRowCount
+					if(bricks[c][r].status == 1) {		//if brick status is '1' then:
+						var brickX = (c*(brickWidth+brickPadding))+brickOffsetLeft;	//brickX is equal to 'c' value, times width plus padding, plus brickOffsetLeft
+						var brickY = (r*(brickHeight+brickPadding))+brickOffsetTop;	//brickY is equal to 'r' value, times height plus padding, plus brickOffsetTop
+						bricks[c][r].x = brickX;		
+						bricks[c][r].y = brickY;		
+						ctx.beginPath();
+						ctx.rect(brickX, brickY, brickWidth, brickHeight);
+						ctx.fillStyle = "#0095DD";
+						ctx.fill();
+						ctx.closePath();
+					}
+				}
+			}
+		}
+		
+		function drawBall() {
+			//draw a circle using "x" and "y" variable for position, ballRadius for size:
+			ctx.beginPath();							//Start drawing
+			ctx.arc(x, y, ballRadius, 0, Math.PI*2);	//Define "arc" for a full circle
+			ctx.fillStyle = "#0095DD";					//Store colour value
+			ctx.fill();									//Fill in circle with colour value stored
+			ctx.closePath();							//Stop drawing
+		}
+		
+		function drawPaddle() {
+			//draw paddle using variables
+			ctx.beginPath();
+			ctx.rect(paddleX, canvas.height-paddleHeight, paddleWidth, paddleHeight);
+			ctx.fillStyle = "#0095DD";
+			ctx.fill();
+			ctx.closePath();
+		}
+		
+		function draw() {
+			ctx.clearRect(0, 0, canvas.width, canvas.height); 	//clear the entire canvas for next "frame" 
+			drawBricks();										//call the drawBricks function to draw the bricks again
+			drawBall(); 										//call the drawBall function to draw the ball again
+			drawPaddle();										//call the drawPaddle function to draw the paddle again
+			drawScore();										//call the drawScore function to draw the score counter
+			drawLives();										//call the drawLives function to draw the lives counter
+			collisionDetection();								//call the collisionDetection function to check if any of the bricks have been hit
+			x += dx;											//add the "dx" value to "x", making the ball go
+			y += dy;											//add the "dy" value to "y", making the ball go
+			
+			if(x + dx > canvas.width-ballRadius || x + dx < ballRadius) {
+				dx = -dx;
+			}
+			
+			if(y + dy < ballRadius) {
+				dy = -dy;
+			} else if(y + dy > canvas.height-ballRadius) {
+				if(x > paddleX && x < paddleX + paddleWidth) {
+					dy = -dy;
+				}
+				
+				else {
+					lives--;
+					if(!lives) {
+						alert("gamerooni overooni");
+						document.location.reload();
+					}
+					else {
+					x = canvas.width/2;
+					y = canvas.height-30;
+					dx = 1.5
+					dy = -1.5
+					paddleX = (canvas.width-paddleWidth)/2;
+					}
+				}
+			}
+
+			if (rightPressed) {
+				paddleX += 5;
+				if (paddleX + paddleWidth > canvas.width) {
+					paddleX = canvas.width - paddleWidth;
+				}
+			}
+			else if(leftPressed) {
+				paddleX += -5;
+				if (paddleX < 0) {
+				paddleX = 0;
+				}
+			}
+		}
+		
+		draw();
+		requestAnimationFrame(draw);
+	</script>
+</html>
